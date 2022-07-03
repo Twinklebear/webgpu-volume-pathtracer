@@ -1,0 +1,33 @@
+{
+  "name": "webgpu-volume-raycaster",
+  "version": "1.0.0",
+  "description": "A volume raycaster using WebGPU. Try it out [online!](https://www.willusher.io/webgpu-volume-raycaster/)",
+  "private": true,
+  "scripts": {
+    "build": "webpack",
+    "serve": "webpack server",
+    "deploy": "webpack --mode=production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Twinklebear/webgpu-volume-raycaster.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Twinklebear/webgpu-volume-raycaster/issues"
+  },
+  "homepage": "https://github.com/Twinklebear/webgpu-volume-raycaster#readme",
+  "dependencies": {
+    "arcball_camera": "^1.0.1",
+    "ez_canvas_controller": "^1.0.0",
+    "gl-matrix": "^3.3.0"
+  },
+  "devDependencies": {
+    "html-webpack-plugin": "^5.3.2",
+    "webpack": "^5.53.0",
+    "webpack-cli": "^4.8.0",
+    "webpack-dev-server": "^4.2.1"
+  }
+}
