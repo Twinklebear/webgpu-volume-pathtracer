@@ -1,7 +1,7 @@
 {
-  "name": "webgpu-volume-raycaster",
+  "name": "webgpu-volume-pathtracer",
   "version": "1.0.0",
-  "description": "A volume raycaster using WebGPU. Try it out [online!](https://www.willusher.io/webgpu-volume-raycaster/)",
+  "description": "A volume pathtracer using WebGPU. Try it out [online!](https://www.willusher.io/webgpu-volume-pathtracer/)",
   "private": true,
   "scripts": {
     "build": "webpack",
@@ -10,15 +10,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Twinklebear/webgpu-volume-raycaster.git"
+    "url": "git+https://github.com/Twinklebear/webgpu-volume-pathtracer.git"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Twinklebear/webgpu-volume-raycaster/issues"
+    "url": "https://github.com/Twinklebear/webgpu-volume-pathtracer/issues"
   },
-  "homepage": "https://github.com/Twinklebear/webgpu-volume-raycaster#readme",
+  "homepage": "https://github.com/Twinklebear/webgpu-volume-pathtracer#readme",
   "dependencies": {
     "arcball_camera": "^1.0.1",
     "ez_canvas_controller": "^1.0.0",

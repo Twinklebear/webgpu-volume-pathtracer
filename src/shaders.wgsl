@@ -1,4 +1,4 @@
-let M_PI: f32 = 3.14159265358979323846;
+const M_PI: f32 = 3.14159265358979323846;
 
 // Reduce clutter/keyboard pain
 type float2 = vec2<f32>;
@@ -10,7 +10,7 @@ type int2 = vec2<i32>;
 // TODO: Would need to write a custom webpack loader for wgsl that
 // processes #include to be able to #include this
 struct LCGRand {
-     state: u32;
+     state: u32,
 };
 
 fn murmur_hash3_mix(hash_in: u32, k_in: u32) -> u32
@@ -68,22 +68,22 @@ fn get_rng(frame_id: u32, pixel: int2, dims: int2) -> LCGRand
 }
 
 struct VertexInput {
-    @location(0) position: float3;
+    @location(0) position: float3,
 };
 
 struct VertexOutput {
-    @builtin(position) position: float4;
-    @location(0) transformed_eye: float3;
-    @location(1) ray_dir: float3;
+    @builtin(position) position: float4,
+    @location(0) transformed_eye: float3,
+    @location(1) ray_dir: float3,
 };
 
 struct ViewParams {
-    proj_view: mat4x4<f32>;
+    proj_view: mat4x4<f32>,
     // Not sure on WGSL padding/alignment rules for blocks,
     // just assume align/pad to vec4
-    eye_pos: float4;
+    eye_pos: float4,
     //volume_scale: float4;
-    frame_id: u32;
+    frame_id: u32,
 };
 
 // TODO: Become user params
@@ -110,7 +110,7 @@ var accum_buffer_in: texture_2d<f32>;
 @group(0) @binding(5)
 var accum_buffer_out: texture_storage_2d<rgba32float, write>;
 
-@stage(vertex)
+@vertex
 fn vertex_main(vert: VertexInput) -> VertexOutput {
     var out: VertexOutput;
     var pos = vert.position;
@@ -148,9 +148,9 @@ fn linear_to_srgb(x: f32) -> f32 {
 }
 
 struct SamplingResult {
-    scattering_event: bool;
-    color: float3;
-    transmittance: f32;
+    scattering_event: bool,
+    color: float3,
+    transmittance: f32,
 };
 
 fn sample_woodcock(orig: float3,
@@ -235,7 +235,7 @@ fn ratio_tracking_transmittance(orig: float3,
     return transmittance;
 }
 
-@stage(fragment)
+@fragment
 fn fragment_main(in: VertexOutput) -> @location(0) float4 {
     var ray_dir = normalize(in.ray_dir);
 

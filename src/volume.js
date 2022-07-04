@@ -49,19 +49,39 @@ export function getCubeMesh()
 
 export async function fetchVolume(file)
 {
-    var url = "https://www.dl.dropboxusercontent.com/s/" + file + "?dl=1";
-    // TODO: could later monitor progress here
-    var data = await fetch(url).then((res) => res.arrayBuffer().then(function(arr) {
-        return new Uint8Array(arr);
-    }));
-    var loadingProgressText = document.getElementById("loadingText");
+    const volumeDims = getVolumeDimensions(file);
+    const volumeSize = volumeDims[0] * volumeDims[1] * volumeDims[2];
 
-    if (data) {
+    var loadingProgressText = document.getElementById("loadingText");
+    var loadingProgressBar = document.getElementById("loadingProgressBar");
+    loadingProgressText.innerHTML = "Loading Volume...";
+    loadingProgressBar.setAttribute("style", "width: 0%");
+
+    var url = "https://www.dl.dropboxusercontent.com/s/" + file + "?dl=1";
+    try {
+        var response = await fetch(url);
+        var reader = response.body.getReader();
+        console.log(`size = ${volumeSize}`);
+
+        var receivedSize = 0;
+        var buf = new Uint8Array(volumeSize);
+        while (true) {
+            var {done, value} = await reader.read();
+            if (done) {
+                break;
+            }
+            buf.set(value, receivedSize);
+            receivedSize += value.length;
+            var percentLoaded = receivedSize / volumeSize * 100;
+            loadingProgressBar.setAttribute("style", `width: ${percentLoaded.toFixed(2)}%`);
+        }
         loadingProgressText.innerHTML = "Volume Loaded";
-    } else {
+        return buf;
+    } catch (err) {
+        console.log(`Error loading volume: ${err}`);
         loadingProgressText.innerHTML = "Error loading volume";
     }
-    return data;
+    return null;
 }
 
 export function linearToSRGB(x)
