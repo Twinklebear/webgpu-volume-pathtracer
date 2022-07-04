@@ -69,8 +69,10 @@ import {
     indexBuffer.unmap();
 
     // Create a buffer to store the view parameters
+    var viewParamsSize = (16 + 8 + 3) * 4;
+    console.log(`viewParamsSize = ${viewParamsSize}`);
     var viewParamsBuffer = device.createBuffer(
-        {size: 21 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
+        {size: viewParamsSize, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
 
     var sampler = device.createSampler({
         magFilter: "linear",
@@ -101,6 +103,13 @@ import {
     // Fetch and upload the volume
     var volumeName = "Bonsai";
     var volumeDims = getVolumeDimensions(volumes[volumeName]);
+    const longestAxis = Math.max(volumeDims[0], Math.max(volumeDims[1], volumeDims[2]));
+    var volumeScale = [
+        volumeDims[0] / longestAxis,
+        volumeDims[1] / longestAxis,
+        volumeDims[2] / longestAxis
+    ];
+
     var volumeTexture = device.createTexture({
         size: volumeDims,
         format: "r8unorm",
@@ -271,6 +280,9 @@ import {
         {binding: 5, resource: null}
     ];
 
+    var sigmaTScale = 100.0;
+    var sigmaSScale = 1.0;
+
     while (true) {
         await animationFrame();
         if (document.hidden) {
@@ -280,16 +292,18 @@ import {
         projView = mat4.mul(projView, proj, camera.camera);
 
         var upload = device.createBuffer(
-            {size: 21 * 4, usage: GPUBufferUsage.COPY_SRC, mappedAtCreation: true});
+            {size: viewParamsSize, usage: GPUBufferUsage.COPY_SRC, mappedAtCreation: true});
         {
             var eyePos = camera.eyePos();
             var map = upload.getMappedRange();
             var f32map = new Float32Array(map);
-            f32map.set(projView);
-            f32map.set(eyePos, projView.length);
-
             var u32map = new Uint32Array(map);
-            u32map.set([frameId], 20);
+
+            f32map.set(projView, 0);
+            f32map.set(eyePos, 16);
+            f32map.set(volumeScale, 20);
+            u32map.set([frameId], 24);
+            f32map.set([sigmaTScale, sigmaSScale], 25);
 
             upload.unmap();
         }
@@ -301,7 +315,7 @@ import {
             device.createBindGroup({layout: bindGroupLayout, entries: bindGroupEntries});
 
         var commandEncoder = device.createCommandEncoder();
-        commandEncoder.copyBufferToBuffer(upload, 0, viewParamsBuffer, 0, 21 * 4);
+        commandEncoder.copyBufferToBuffer(upload, 0, viewParamsBuffer, 0, viewParamsSize);
 
         renderPassDesc.colorAttachments[0].view = context.getCurrentTexture().createView();
         var renderPass = commandEncoder.beginRenderPass(renderPassDesc);

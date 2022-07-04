@@ -82,17 +82,14 @@ struct ViewParams {
     // Not sure on WGSL padding/alignment rules for blocks,
     // just assume align/pad to vec4
     eye_pos: float4,
-    //volume_scale: float4;
+    volume_scale: float4,
     frame_id: u32,
+    sigma_t_scale: f32,
+    sigma_s_scale: f32
 };
 
-// TODO: Become user params
-var<private> sigma_t_scale: f32 = 100.0;
-var<private> sigma_s_scale: f32 = 1.0;
-
-
 @group(0) @binding(0)
-var<uniform> view_params: ViewParams;
+var<uniform> params: ViewParams;
 
 @group(0) @binding(1)
 var volume: texture_3d<f32>;
@@ -114,8 +111,13 @@ var accum_buffer_out: texture_storage_2d<rgba32float, write>;
 fn vertex_main(vert: VertexInput) -> VertexOutput {
     var out: VertexOutput;
     var pos = vert.position;
-    out.position = view_params.proj_view * float4(pos, 1.0);
-    out.transformed_eye = view_params.eye_pos.xyz;
+    // Translate the volume to place its center at the origin to scale it
+    var volume_translation = float3(0.5) - params.volume_scale.xyz * 0.5;
+    pos = pos * params.volume_scale.xyz + volume_translation;
+    out.position = params.proj_view * float4(pos, 1.0);
+
+    // Transform the eye into the scaled space
+    out.transformed_eye = (params.eye_pos.xyz - volume_translation) / params.volume_scale.xyz;
     out.ray_dir = pos - out.transformed_eye;
     return out;
 };
@@ -167,7 +169,7 @@ fn sample_woodcock(orig: float3,
     loop {
         let samples = float2(lcg_randomf(rng), lcg_randomf(rng));
 
-        *t -= log(1.0 - samples.x) / sigma_t_scale;
+        *t -= log(1.0 - samples.x) / params.sigma_t_scale;
         if (*t >= interval.y) {
             break;
         }
@@ -199,7 +201,7 @@ fn delta_tracking_transmittance(orig: float3,
     loop {
         let samples = float2(lcg_randomf(rng), lcg_randomf(rng));
 
-        t -= log(1.0 - samples.x) / sigma_t_scale;
+        t -= log(1.0 - samples.x) / params.sigma_t_scale;
         if (t >= interval.y) {
             break;
         }
@@ -222,7 +224,7 @@ fn ratio_tracking_transmittance(orig: float3,
     var transmittance = 1.0;
     var t = interval.x;
     loop {
-        t -= log(1.0 - lcg_randomf(rng)) / sigma_t_scale;
+        t -= log(1.0 - lcg_randomf(rng)) / params.sigma_t_scale;
         if (t >= interval.y) {
             break;
         }
@@ -246,7 +248,7 @@ fn fragment_main(in: VertexOutput) -> @location(0) float4 {
 	t_interval.x = max(t_interval.x, 0.0);
 
     let pixel = int2(i32(in.position.x), i32(in.position.y));
-    var rng = get_rng(view_params.frame_id, pixel, int2(1280, 720));
+    var rng = get_rng(params.frame_id, pixel, int2(1280, 720));
 
     // This should just be 1 for the max density in scivis
     var inv_max_density = 1.0;
@@ -294,7 +296,7 @@ fn fragment_main(in: VertexOutput) -> @location(0) float4 {
             // can give some nice effects. Would be cool to provide control of this
             illum += throughput * event.color * volume_emission;// * (1.0 - event.transmittance);
 
-            throughput *= event.color * event.transmittance * sigma_s_scale;
+            throughput *= event.color * event.transmittance * params.sigma_s_scale;
 
             // Scatter in a random direction to continue the ray
             ray_dir = sample_spherical_direction(float2(lcg_randomf(&rng), lcg_randomf(&rng)));
@@ -312,13 +314,13 @@ fn fragment_main(in: VertexOutput) -> @location(0) float4 {
 
     // Accumulate into the accumulation buffer for progressive accumulation 
     var accum_color = float4(0.0);
-    if (view_params.frame_id > 0u) {
+    if (params.frame_id > 0u) {
         accum_color = textureLoad(accum_buffer_in, pixel, 0);
     }
     accum_color += color;
     textureStore(accum_buffer_out, pixel, accum_color);
 
-    color = accum_color / f32(view_params.frame_id + 1u);
+    color = accum_color / f32(params.frame_id + 1u);
 
     // TODO: background color also needs to be sRGB-mapped, otherwise this
     // causes the volume bounding box to show up incorrectly b/c of the
