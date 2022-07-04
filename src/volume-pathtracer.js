@@ -7,9 +7,12 @@ import {
     alignTo,
     colormaps,
     fetchVolume,
+    fillSelector,
     getCubeMesh,
     getVolumeDimensions,
     linearToSRGB,
+    uploadImage,
+    uploadVolume,
     volumes
 } from "./volume.js";
 
@@ -29,7 +32,6 @@ import {
     var device = await adapter.requestDevice();
 
     // Get a context to display our rendered image on the canvas
-    // TODO: Also need to pass width and height
     var canvas = document.getElementById("webgpu-canvas");
     var context = canvas.getContext("webgpu");
 
@@ -72,7 +74,6 @@ import {
 
     // Create a buffer to store the view parameters
     var viewParamsSize = (16 + 8 + 3) * 4;
-    console.log(`viewParamsSize = ${viewParamsSize}`);
     var viewParamsBuffer = device.createBuffer(
         {size: viewParamsSize, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
 
@@ -81,34 +82,18 @@ import {
         minFilter: "linear",
     });
 
-    // Upload the colormap texture
-    var colormapTexture = null;
-    {
-        var colormapImage = new Image();
-        colormapImage.src = colormaps["Cool Warm"];
-        await colormapImage.decode();
-        var imageBitmap = await createImageBitmap(colormapImage);
+    var volumePicker = document.getElementById("volumeList");
+    var colormapPicker = document.getElementById("colormapList");
 
-        colormapTexture = device.createTexture({
-            size: [imageBitmap.width, imageBitmap.height, 1],
-            format: "rgba8unorm",
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST |
-                       GPUTextureUsage.RENDER_ATTACHMENT
-        });
-
-        var src = {source: imageBitmap};
-        var dst = {texture: colormapTexture};
-        device.queue.copyExternalImageToTexture(
-            src, dst, [imageBitmap.width, imageBitmap.height]);
-    }
+    fillSelector(volumePicker, volumes);
+    fillSelector(colormapPicker, colormaps);
 
     // Fetch and upload the volume
     var volumeName = "Bonsai";
     if (window.location.hash) {
         var linkedDataset = decodeURI(window.location.hash.substring(1));
-        console.log(`liked to ${linkedDataset}`);
         if (linkedDataset in volumes) {
-            // document.getElementById("volumeList").value = linkedDataset;
+            volumePicker.value = linkedDataset;
             volumeName = linkedDataset;
         } else {
             alert(`Linked to invalid data set ${linkedDataset}`);
@@ -124,33 +109,12 @@ import {
         volumeDims[2] / longestAxis
     ];
 
-    var volumeTexture = device.createTexture({
-        size: volumeDims,
-        format: "r8unorm",
-        dimension: "3d",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
-    });
-    {
-        var volumeData = await fetchVolume(volumes[volumeName]);
+    var colormapName = "Cool Warm";
+    var colormapTexture = await uploadImage(device, colormaps[colormapName]);
 
-        var volumeUploadBuf = device.createBuffer(
-            {size: volumeData.length, usage: GPUBufferUsage.COPY_SRC, mappedAtCreation: true});
-        new Uint8Array(volumeUploadBuf.getMappedRange()).set(volumeData);
-        volumeUploadBuf.unmap();
-
-        var commandEncoder = device.createCommandEncoder();
-
-        var src = {
-            buffer: volumeUploadBuf,
-            // Volumes must be aligned to 256 bytes per row, fetchVolume does this padding
-            bytesPerRow: alignTo(volumeDims[0], 256),
-            rowsPerImage: volumeDims[1]
-        };
-        var dst = {texture: volumeTexture};
-        commandEncoder.copyBufferToTexture(src, dst, volumeDims);
-
-        await device.queue.submit([commandEncoder.finish()]);
-    }
+    var volumeTexture =
+        await fetchVolume(volumes[volumeName])
+            .then((volumeData) => { return uploadVolume(device, volumeDims, volumeData); });
 
     // We need to ping-pong the accumulation buffers because read-write storage textures are
     // missing and we can't have the same texture bound as both a read texture and storage
@@ -302,6 +266,39 @@ import {
         if (document.hidden) {
             continue;
         }
+
+        // Fetch a new volume or colormap if a new one was selected
+        if (volumeName != volumePicker.value) {
+            volumeName = volumePicker.value;
+            history.replaceState(history.state, "", "#" + volumeName);
+
+            volumeDims = getVolumeDimensions(volumes[volumeName]);
+            const longestAxis =
+                Math.max(volumeDims[0], Math.max(volumeDims[1], volumeDims[2]));
+            volumeScale = [
+                volumeDims[0] / longestAxis,
+                volumeDims[1] / longestAxis,
+                volumeDims[2] / longestAxis
+            ];
+
+            volumeTexture = await fetchVolume(volumes[volumeName]).then((volumeData) => {
+                return uploadVolume(device, volumeDims, volumeData);
+            });
+
+            // Reset accumulation and update the bindgroup
+            frameId = 0;
+            bindGroupEntries[1].resource = volumeTexture.createView();
+        }
+
+        if (colormapName != colormapPicker.value) {
+            colormapName = colormapPicker.value;
+            colormapTexture = await uploadImage(device, colormaps[colormapName]);
+
+            // Reset accumulation and update the bindgroup
+            frameId = 0;
+            bindGroupEntries[2].resource = colormapTexture.createView();
+        }
+
         // Update camera buffer
         projView = mat4.mul(projView, proj, camera.camera);
 

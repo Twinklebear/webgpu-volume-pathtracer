@@ -247,6 +247,8 @@ fn fragment_main(in: VertexOutput) -> @location(0) float4 {
 	t_interval.x = max(t_interval.x, 0.0);
 
     let pixel = int2(i32(in.position.x), i32(in.position.y));
+    // Image will be no larger than 1280x720 so we can keep this fixed
+    // for picking our RNG value
     var rng = get_rng(params.frame_id, pixel, int2(1280, 720));
 
     // This should just be 1 for the max density in scivis

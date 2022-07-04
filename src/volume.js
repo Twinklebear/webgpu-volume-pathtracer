@@ -80,7 +80,6 @@ export async function fetchVolume(file)
     try {
         var response = await fetch(url);
         var reader = response.body.getReader();
-        console.log(`size = ${volumeSize}`);
 
         var receivedSize = 0;
         var buf = new Uint8Array(volumeSize);
@@ -109,10 +108,73 @@ export async function fetchVolume(file)
     return null;
 }
 
+export async function uploadVolume(device, volumeDims, volumeData)
+{
+    var volumeTexture = device.createTexture({
+        size: volumeDims,
+        format: "r8unorm",
+        dimension: "3d",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+    });
+
+    var uploadBuf = device.createBuffer(
+        {size: volumeData.length, usage: GPUBufferUsage.COPY_SRC, mappedAtCreation: true});
+    new Uint8Array(uploadBuf.getMappedRange()).set(volumeData);
+    uploadBuf.unmap();
+
+    var commandEncoder = device.createCommandEncoder();
+
+    var src = {
+        buffer: uploadBuf,
+        // Volumes must be aligned to 256 bytes per row, fetchVolume does this padding
+        bytesPerRow: alignTo(volumeDims[0], 256),
+        rowsPerImage: volumeDims[1]
+    };
+    var dst = {texture: volumeTexture};
+    commandEncoder.copyBufferToTexture(src, dst, volumeDims);
+
+    device.queue.submit([commandEncoder.finish()]);
+    await device.queue.onSubmittedWorkDone();
+
+    return volumeTexture;
+}
+
+export async function uploadImage(device, imageSrc)
+{
+    var image = new Image();
+    image.src = imageSrc;
+    await image.decode();
+    var bitmap = await createImageBitmap(image);
+
+    var texture = device.createTexture({
+        size: [bitmap.width, bitmap.height, 1],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST |
+                   GPUTextureUsage.RENDER_ATTACHMENT
+    });
+
+    var src = {source: bitmap};
+    var dst = {texture: texture};
+    device.queue.copyExternalImageToTexture(src, dst, [bitmap.width, bitmap.height]);
+    await device.queue.onSubmittedWorkDone();
+
+    return texture;
+}
+
 export function linearToSRGB(x)
 {
     if (x <= 0.0031308) {
         return 12.92 * x;
     }
     return 1.055 * Math.pow(x, 1.0 / 2.4) - 0.055;
+}
+
+export function fillSelector(selector, dict)
+{
+    for (var v in dict) {
+        var opt = document.createElement("option");
+        opt.value = v;
+        opt.innerHTML = v;
+        selector.appendChild(opt);
+    }
 }
