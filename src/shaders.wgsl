@@ -110,15 +110,14 @@ var accum_buffer_out: texture_storage_2d<rgba32float, write>;
 @vertex
 fn vertex_main(vert: VertexInput) -> VertexOutput {
     var out: VertexOutput;
-    var pos = vert.position;
     // Translate the volume to place its center at the origin to scale it
     var volume_translation = float3(0.5) - params.volume_scale.xyz * 0.5;
-    pos = pos * params.volume_scale.xyz + volume_translation;
-    out.position = params.proj_view * float4(pos, 1.0);
+    var world_pos = vert.position * params.volume_scale.xyz + volume_translation;
+    out.position = params.proj_view * float4(world_pos, 1.0);
 
     // Transform the eye into the scaled space
     out.transformed_eye = (params.eye_pos.xyz - volume_translation) / params.volume_scale.xyz;
-    out.ray_dir = pos - out.transformed_eye;
+    out.ray_dir = vert.position - out.transformed_eye;
     return out;
 };
 
