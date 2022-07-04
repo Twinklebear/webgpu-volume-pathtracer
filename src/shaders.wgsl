@@ -83,6 +83,7 @@ struct ViewParams {
     // just assume align/pad to vec4
     eye_pos: float4,
     volume_scale: float4,
+    light_dir: float4,
     frame_id: u32,
     sigma_t_scale: f32,
     sigma_s_scale: f32
@@ -254,8 +255,8 @@ fn fragment_main(in: VertexOutput) -> @location(0) float4 {
     // This should just be 1 for the max density in scivis
     var inv_max_density = 1.0;
 
-    let light_dir = normalize(float3(1.0, 1.0, 0.0));
-    let light_emission = 0.5;
+    let light_dir = params.light_dir.xyz;
+    let light_emission = params.light_dir.w;
     let ambient_strength = 0.0;
     let volume_emission = 0.5;
 
@@ -288,8 +289,12 @@ fn fragment_main(in: VertexOutput) -> @location(0) float4 {
             t_interval = intersect_box(pos, light_dir);
             // We're inside the volume
             t_interval.x = 0.0;
-            //var light_transmittance = ratio_tracking_transmittance(pos, light_dir, t_interval, &rng);
-            var light_transmittance = delta_tracking_transmittance(pos, light_dir, t_interval, &rng);
+            /*
+            var light_transmittance =
+                ratio_tracking_transmittance(pos, light_dir, t_interval, &rng);
+            */
+            var light_transmittance =
+                delta_tracking_transmittance(pos, light_dir, t_interval, &rng);
             illum += throughput * light_transmittance * float3(light_emission);
 
             // Include emission from the volume for emission/absorption scivis model

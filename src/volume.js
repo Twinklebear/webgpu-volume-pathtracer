@@ -178,3 +178,10 @@ export function fillSelector(selector, dict)
         selector.appendChild(opt);
     }
 }
+
+export function sphericalDir(theta, phi)
+{
+    const cosTheta = Math.cos(theta);
+    const sinTheta = Math.sin(theta);
+    return [Math.cos(phi) * sinTheta, Math.sin(phi) * sinTheta, cosTheta];
+}

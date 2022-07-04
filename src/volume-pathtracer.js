@@ -11,6 +11,7 @@ import {
     getCubeMesh,
     getVolumeDimensions,
     linearToSRGB,
+    sphericalDir,
     uploadImage,
     uploadVolume,
     volumes
@@ -73,7 +74,7 @@ import {
     indexBuffer.unmap();
 
     // Create a buffer to store the view parameters
-    var viewParamsSize = (16 + 8 + 3) * 4;
+    var viewParamsSize = (16 + 4 * 3 + 3) * 4;
     var viewParamsBuffer = device.createBuffer(
         {size: viewParamsSize, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
 
@@ -240,6 +241,20 @@ import {
     };
     controller.registerForCanvas(canvas);
 
+    // Reset accumulation when the light parameters change
+    var lightPhiSlider = document.getElementById("phiRange");
+    var lightThetaSlider = document.getElementById("thetaRange");
+    var lightStrengthSlider = document.getElementById("lightStrength");
+    lightPhiSlider.oninput = function() {
+        frameId = 0;
+    };
+    lightThetaSlider.oninput = function() {
+        frameId = 0;
+    };
+    lightStrengthSlider.oninput = function() {
+        frameId = 0;
+    };
+
     var animationFrame = function() {
         var resolve = null;
         var promise = new Promise(r => resolve = r);
@@ -302,6 +317,8 @@ import {
         // Update camera buffer
         projView = mat4.mul(projView, proj, camera.camera);
 
+        var lightDir = sphericalDir(lightThetaSlider.value, lightPhiSlider.value);
+
         var upload = device.createBuffer(
             {size: viewParamsSize, usage: GPUBufferUsage.COPY_SRC, mappedAtCreation: true});
         {
@@ -310,11 +327,14 @@ import {
             var f32map = new Float32Array(map);
             var u32map = new Uint32Array(map);
 
+            // TODO: A struct layout size computer/writer utility would help here
             f32map.set(projView, 0);
             f32map.set(eyePos, 16);
-            f32map.set(volumeScale, 20);
-            u32map.set([frameId], 24);
-            f32map.set([sigmaTScale, sigmaSScale], 25);
+            f32map.set(volumeScale, 16 + 4);
+            f32map.set(lightDir, 16 + 4 * 2);
+            f32map.set([lightStrengthSlider.value], 16 + 4 * 2 + 3);
+            u32map.set([frameId], 16 + 4 * 3);
+            f32map.set([sigmaTScale, sigmaSScale], 16 + 4 * 3 + 1);
 
             upload.unmap();
         }
