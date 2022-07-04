@@ -4,6 +4,7 @@ import {mat4, vec3} from "gl-matrix";
 
 import shaderCode from "./shaders.wgsl";
 import {
+    alignTo,
     colormaps,
     fetchVolume,
     getCubeMesh,
@@ -28,6 +29,7 @@ import {
     var device = await adapter.requestDevice();
 
     // Get a context to display our rendered image on the canvas
+    // TODO: Also need to pass width and height
     var canvas = document.getElementById("webgpu-canvas");
     var context = canvas.getContext("webgpu");
 
@@ -102,6 +104,18 @@ import {
 
     // Fetch and upload the volume
     var volumeName = "Bonsai";
+    if (window.location.hash) {
+        var linkedDataset = decodeURI(window.location.hash.substring(1));
+        console.log(`liked to ${linkedDataset}`);
+        if (linkedDataset in volumes) {
+            // document.getElementById("volumeList").value = linkedDataset;
+            volumeName = linkedDataset;
+        } else {
+            alert(`Linked to invalid data set ${linkedDataset}`);
+            return;
+        }
+    }
+
     var volumeDims = getVolumeDimensions(volumes[volumeName]);
     const longestAxis = Math.max(volumeDims[0], Math.max(volumeDims[1], volumeDims[2]));
     var volumeScale = [
@@ -128,8 +142,8 @@ import {
 
         var src = {
             buffer: volumeUploadBuf,
-            // NOTE: bytes per row must be multiple of 256
-            bytesPerRow: volumeDims[0],
+            // Volumes must be aligned to 256 bytes per row, fetchVolume does this padding
+            bytesPerRow: alignTo(volumeDims[0], 256),
             rowsPerImage: volumeDims[1]
         };
         var dst = {texture: volumeTexture};

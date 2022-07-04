@@ -47,6 +47,25 @@ export function getCubeMesh()
     return {vertices: cubeVertices, indices: cubeIndices};
 }
 
+export function alignTo(val, align)
+{
+    return Math.floor((val + align - 1) / align) * align;
+};
+
+function padVolume(buf, volumeDims)
+{
+    const paddedVolumeDims = [alignTo(volumeDims[0], 256), volumeDims[1], volumeDims[2]];
+    var padded =
+        new Uint8Array(paddedVolumeDims[0] * paddedVolumeDims[1] * paddedVolumeDims[2]);
+    // Copy each row into the padded volume buffer
+    const nrows = volumeDims[1] * volumeDims[2];
+    for (var i = 0; i < nrows; ++i) {
+        var inrow = buf.subarray(i * volumeDims[0], i * volumeDims[0] + volumeDims[0]);
+        padded.set(inrow, i * paddedVolumeDims[0]);
+    }
+    return padded;
+}
+
 export async function fetchVolume(file)
 {
     const volumeDims = getVolumeDimensions(file);
@@ -76,6 +95,12 @@ export async function fetchVolume(file)
             loadingProgressBar.setAttribute("style", `width: ${percentLoaded.toFixed(2)}%`);
         }
         loadingProgressText.innerHTML = "Volume Loaded";
+
+        // WebGPU requires that bytes per row = 256, so we need to pad volumes
+        // that are smaller than this
+        if (volumeDims[0] % 256 != 0) {
+            return padVolume(buf, volumeDims);
+        }
         return buf;
     } catch (err) {
         console.log(`Error loading volume: ${err}`);
