@@ -136,8 +136,12 @@ import {
 
     // Setup render outputs
     var swapChainFormat = "bgra8unorm";
-    context.configure(
-        {device: device, format: swapChainFormat, usage: GPUTextureUsage.OUTPUT_ATTACHMENT});
+    context.configure({
+        device: device,
+        format: swapChainFormat,
+        usage: GPUTextureUsage.OUTPUT_ATTACHMENT,
+        alphaMode: "premultiplied"
+    });
 
     var bindGroupLayout = device.createBindGroupLayout({
         entries: [
@@ -206,6 +210,7 @@ import {
         colorAttachments: [{
             view: undefined,
             loadOp: "clear",
+            storeOp: "store",
             clearValue: [clearColor, clearColor, clearColor, 1]
         }]
     };
