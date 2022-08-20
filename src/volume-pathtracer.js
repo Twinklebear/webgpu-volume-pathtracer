@@ -4,7 +4,6 @@ import {mat4, vec3} from "gl-matrix";
 
 import shaderCode from "./shaders.wgsl";
 import {
-    alignTo,
     colormaps,
     fetchVolume,
     fillSelector,
@@ -273,6 +272,12 @@ import {
         {binding: 5, resource: null}
     ];
 
+    var upload = device.createBuffer({
+        size: viewParamsSize,
+        usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
+        mappedAtCreation: false
+    });
+
     var sigmaTScale = 100.0;
     var sigmaSScale = 1.0;
 
@@ -319,9 +324,8 @@ import {
 
         var lightDir = sphericalDir(lightThetaSlider.value, lightPhiSlider.value);
 
-        var upload = device.createBuffer(
-            {size: viewParamsSize, usage: GPUBufferUsage.COPY_SRC, mappedAtCreation: true});
         {
+            await upload.mapAsync(GPUMapMode.WRITE);
             var eyePos = camera.eyePos();
             var map = upload.getMappedRange();
             var f32map = new Float32Array(map);
@@ -361,7 +365,6 @@ import {
         device.queue.submit([commandEncoder.finish()]);
 
         // Explicitly release the GPU buffer instead of waiting for GC
-        upload.destroy();
         frameId += 1;
     }
 })();
