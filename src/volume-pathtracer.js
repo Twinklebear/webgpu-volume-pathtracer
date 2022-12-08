@@ -72,8 +72,8 @@ import {
     new Uint16Array(indexBuffer.getMappedRange()).set(cube.indices);
     indexBuffer.unmap();
 
-    // Create a buffer to store the view parameters
-    var viewParamsSize = (16 + 4 * 3 + 3) * 4;
+    // Create a buffer to store the view parameters, the buffer is padded out by 1 float
+    var viewParamsSize = (16 + 4 * 4) * 4;
     var viewParamsBuffer = device.createBuffer(
         {size: viewParamsSize, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
 
