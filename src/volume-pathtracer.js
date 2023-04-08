@@ -37,7 +37,7 @@ import {
 
     // Setup shader modules
     var shaderModule = device.createShaderModule({code: shaderCode});
-    var compilationInfo = await shaderModule.compilationInfo();
+    var compilationInfo = await shaderModule.getCompilationInfo();
     if (compilationInfo.messages.length > 0) {
         var hadError = false;
         console.log("Shader compilation log:");

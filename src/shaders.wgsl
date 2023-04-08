@@ -1,11 +1,11 @@
 const M_PI: f32 = 3.14159265358979323846;
 
 // Reduce clutter/keyboard pain
-type float2 = vec2<f32>;
-type float3 = vec3<f32>;
-type float4 = vec4<f32>;
-type uint2 = vec2<u32>;
-type int2 = vec2<i32>;
+alias float2 = vec2<f32>;
+alias float3 = vec3<f32>;
+alias float4 = vec4<f32>;
+alias uint2 = vec2<u32>;
+alias int2 = vec2<i32>;
 
 // TODO: Would need to write a custom webpack loader for wgsl that
 // processes #include to be able to #include this
