@@ -6,15 +6,13 @@ import samselGreen from "./colormaps/samsel-linear-green.png";
 import samselYgb from "./colormaps/samsel-linear-ygb-1211g.png";
 
 export const volumes = {
-    "Fuel": "7d87jcsh0qodk78/fuel_64x64x64_uint8.raw",
-    "Neghip": "zgocya7h33nltu9/neghip_64x64x64_uint8.raw",
-    "Hydrogen Atom": "jwbav8s3wmmxd5x/hydrogen_atom_128x128x128_uint8.raw",
-    "Boston Teapot": "w4y88hlf2nbduiv/boston_teapot_256x256x178_uint8.raw",
-    "Engine": "ld2sqwwd3vaq4zf/engine_256x256x128_uint8.raw",
-    "Bonsai": "rdnhdxmxtfxe0sa/bonsai_256x256x256_uint8.raw",
-    "Foot": "ic0mik3qv4vqacm/foot_256x256x256_uint8.raw",
-    "Skull": "5rfjobn0lvb7tmo/skull_256x256x256_uint8.raw",
-    "Aneurysm": "3ykigaiym8uiwbp/aneurism_256x256x256_uint8.raw",
+    "Fuel": "fuel_64x64x64_uint8.raw",
+    "Neghip": "neghip_64x64x64_uint8.raw",
+    "Hydrogen Atom": "hydrogen_atom_128x128x128_uint8.raw",
+    "Bonsai": "bonsai_256x256x256_uint8.raw",
+    "Foot": "foot_256x256x256_uint8.raw",
+    "Skull": "skull_256x256x256_uint8.raw",
+    "Aneurysm": "aneurism_256x256x256_uint8.raw",
 };
 
 export const colormaps = {
@@ -26,15 +24,13 @@ export const colormaps = {
     "Samsel Linear YGB 1211G": samselYgb,
 };
 
-export function getVolumeDimensions(file)
-{
-    var fileRegex = /.*\/(\w+)_(\d+)x(\d+)x(\d+)_(\w+)\.*/;
+export function getVolumeDimensions(file) {
+    var fileRegex = /(\w+)_(\d+)x(\d+)x(\d+)_(\w+)\.*/;
     var m = file.match(fileRegex);
     return [parseInt(m[2]), parseInt(m[3]), parseInt(m[4])];
 }
 
-export function getCubeMesh()
-{
+export function getCubeMesh() {
     var cubeVertices = [
         1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0,
         1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0
@@ -47,13 +43,11 @@ export function getCubeMesh()
     return {vertices: cubeVertices, indices: cubeIndices};
 }
 
-export function alignTo(val, align)
-{
+export function alignTo(val, align) {
     return Math.floor((val + align - 1) / align) * align;
 };
 
-function padVolume(buf, volumeDims)
-{
+function padVolume(buf, volumeDims) {
     const paddedVolumeDims = [alignTo(volumeDims[0], 256), volumeDims[1], volumeDims[2]];
     var padded =
         new Uint8Array(paddedVolumeDims[0] * paddedVolumeDims[1] * paddedVolumeDims[2]);
@@ -66,8 +60,7 @@ function padVolume(buf, volumeDims)
     return padded;
 }
 
-export async function fetchVolume(file)
-{
+export async function fetchVolume(file) {
     const volumeDims = getVolumeDimensions(file);
     const volumeSize = volumeDims[0] * volumeDims[1] * volumeDims[2];
 
@@ -76,7 +69,7 @@ export async function fetchVolume(file)
     loadingProgressText.innerHTML = "Loading Volume...";
     loadingProgressBar.setAttribute("style", "width: 0%");
 
-    var url = "https://www.dl.dropboxusercontent.com/s/" + file + "?dl=1";
+    var url = "https://cdn.willusher.io/demo-volumes/" + file;
     try {
         var response = await fetch(url);
         var reader = response.body.getReader();
@@ -108,8 +101,7 @@ export async function fetchVolume(file)
     return null;
 }
 
-export async function uploadVolume(device, volumeDims, volumeData)
-{
+export async function uploadVolume(device, volumeDims, volumeData) {
     var volumeTexture = device.createTexture({
         size: volumeDims,
         format: "r8unorm",
@@ -139,8 +131,7 @@ export async function uploadVolume(device, volumeDims, volumeData)
     return volumeTexture;
 }
 
-export async function uploadImage(device, imageSrc)
-{
+export async function uploadImage(device, imageSrc) {
     var image = new Image();
     image.src = imageSrc;
     await image.decode();
@@ -150,7 +141,7 @@ export async function uploadImage(device, imageSrc)
         size: [bitmap.width, bitmap.height, 1],
         format: "rgba8unorm",
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST |
-                   GPUTextureUsage.RENDER_ATTACHMENT
+            GPUTextureUsage.RENDER_ATTACHMENT
     });
 
     var src = {source: bitmap};
@@ -161,16 +152,14 @@ export async function uploadImage(device, imageSrc)
     return texture;
 }
 
-export function linearToSRGB(x)
-{
+export function linearToSRGB(x) {
     if (x <= 0.0031308) {
         return 12.92 * x;
     }
     return 1.055 * Math.pow(x, 1.0 / 2.4) - 0.055;
 }
 
-export function fillSelector(selector, dict)
-{
+export function fillSelector(selector, dict) {
     for (var v in dict) {
         var opt = document.createElement("option");
         opt.value = v;
@@ -179,8 +168,7 @@ export function fillSelector(selector, dict)
     }
 }
 
-export function sphericalDir(theta, phi)
-{
+export function sphericalDir(theta, phi) {
     const cosTheta = Math.cos(theta);
     const sinTheta = Math.sin(theta);
     return [Math.cos(phi) * sinTheta, Math.sin(phi) * sinTheta, cosTheta];
