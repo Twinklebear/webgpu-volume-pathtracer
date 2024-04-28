@@ -259,14 +259,6 @@ import {
         frameId = 0;
     };
 
-    var animationFrame = function() {
-        var resolve = null;
-        var promise = new Promise(r => resolve = r);
-        window.requestAnimationFrame(resolve);
-        return promise
-    };
-    requestAnimationFrame(animationFrame);
-
     var bindGroupEntries = [
         {binding: 0, resource: {buffer: viewParamsBuffer}},
         {binding: 1, resource: volumeTexture.createView()},
@@ -286,12 +278,7 @@ import {
     var sigmaTScale = 100.0;
     var sigmaSScale = 1.0;
 
-    while (true) {
-        await animationFrame();
-        if (document.hidden) {
-            continue;
-        }
-
+    const render = async () => {
         // Fetch a new volume or colormap if a new one was selected
         if (volumeName != volumePicker.value) {
             volumeName = volumePicker.value;
@@ -369,7 +356,8 @@ import {
         renderPass.end();
         device.queue.submit([commandEncoder.finish()]);
 
-        // Explicitly release the GPU buffer instead of waiting for GC
         frameId += 1;
-    }
+        requestAnimationFrame(render);
+    };
+    requestAnimationFrame(render);
 })();

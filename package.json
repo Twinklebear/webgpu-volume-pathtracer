@@ -25,9 +25,9 @@
     "gl-matrix": "^3.3.0"
   },
   "devDependencies": {
-    "html-webpack-plugin": "^5.3.2",
-    "webpack": "^5.53.0",
-    "webpack-cli": "^4.8.0",
-    "webpack-dev-server": "^4.2.1"
+    "html-webpack-plugin": "^5.6.0",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4"
   }
 }
