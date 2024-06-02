@@ -18,7 +18,7 @@ jobs:
       # visit each demo
       - name: Add Stats
         run: |
-          sed -i.bk "s/\<\/body\>/\<script defer data-domain='willusher.io' src='https:\/\/pan.wushernet.com\/js\/script.js'\>\<\/script\>\<\/body\>/" index.html
+          sed -i.bk "s/<\/body>/<script defer data-domain='willusher.io' src='https:\/\/pan.wushernet.com\/js\/script.js'><\/script><\/body>/" index.html
 
       - name: Build App
         run: |
