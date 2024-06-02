@@ -19,6 +19,12 @@ jobs:
           npm i
           npm run build
 
+      # Add plausible analytics, curious how many people
+      # visit each demo
+      - name: Add Stats
+        run: |
+          sed -i.bk "s/\<\/body\>/\<script defer data-domain='willusher.io' src='https:\/\/pan.wushernet.com\/js\/script.js'\>\<\/script\>\<\/body\>/" index.html
+
       - name: Upload Web App Dist
         uses: actions/upload-pages-artifact@v3
         with:
@@ -41,6 +47,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-
 
